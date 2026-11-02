@@ -1,0 +1,16 @@
+{
+  "name": "bar-live",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TikTok LIVE bar room overlay server (forked from Chánh Điện Online by Kent Juno, MIT)",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/music.test.mjs"
+  },
+  "dependencies": {
+    "msedge-tts": "2.1.1",
+    "tiktok-live-connector": "2.5.0",
+    "ws": "8.18.0"
+  }
+}

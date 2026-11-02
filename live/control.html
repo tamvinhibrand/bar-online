@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bảng điều khiển · Bar Live</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&display=swap">
+<style>
+/* Bố cục: các thẻ xếp lưới tự co (kết nối · nhạc · tương tác · giọng & cảnh), thu về 1 cột khi cửa sổ hẹp. */
+:root{
+  --bg:#0b0616; --card:#150b26; --card2:#211238; --fg:#efe7ff; --muted:#a998c9; --line:#3a2560;
+  --pink:#ff3fb4; --cyan:#33e6ff; --gold:#ffcc4d; --red:#8f1f3a; --green:#1f7a52; --body:"Be Vietnam Pro",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 var(--body);padding:18px max(16px,env(safe-area-inset-right)) 30px max(16px,env(safe-area-inset-left))}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+h1{font-size:24px;font-weight:800;margin:0;color:var(--pink);text-shadow:0 0 12px rgba(255,63,180,.5)}
+.status{display:flex;gap:10px;flex-wrap:wrap}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;font-variant-numeric:tabular-nums}
+.chip.ok{border-color:var(--green);color:#9fe0c4}.chip.bad{border-color:#a33;color:#f3a3a3}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:10px;min-width:0}
+.card.wide{grid-column:span 2}
+@media (max-width:760px){.card.wide{grid-column:auto}}
+.card h2{margin:0;font:600 15px var(--body);letter-spacing:.04em;text-transform:uppercase;color:var(--cyan)}
+.hint{color:var(--muted);font-size:12px;margin:0}
+label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--fg);background:#090412;border:1px solid var(--line);border-radius:9px;padding:8px 10px;width:100%;min-width:0}
+input[type=range]{padding:0}
+textarea{resize:vertical;min-height:70px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.row>*{flex:1 1 0;min-width:0}
+.row.tight>*{flex:0 0 auto}
+button{font:600 13px var(--body);color:var(--fg);background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;cursor:pointer}
+button:hover{border-color:var(--cyan)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
+button.primary{background:var(--green);border-color:#2f9a6a}
+button.pink{background:#6a1a5a;border-color:var(--pink)}
+button.red{background:var(--red);border-color:#c0405e}
+button.sm{padding:5px 9px;font-size:12px}
+.check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--fg)}
+.check input{width:auto}
+#now{background:#090412;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+#now b{color:var(--gold)}
+#queue{display:grid;gap:8px;max-height:460px;overflow:auto}
+.qi{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:6px;background:#0f0720}
+.qi .top{display:flex;gap:8px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.qi .title{font-weight:600;overflow-wrap:anywhere}
+.qi .by{color:var(--muted);font-size:12px}
+.badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+.badge.ok{border-color:var(--green);color:#9fe0c4}.badge.wait{border-color:var(--gold);color:var(--gold)}.badge.bad{border-color:#c0405e;color:#f3a3b3}
+#people{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+#people table{width:100%;border-collapse:collapse;font-size:13px}
+#people td{padding:5px 8px;border-bottom:1px solid #22143a}
+#people td:last-child{text-align:right;color:var(--gold);font-variant-numeric:tabular-nums}
+#log{height:220px;overflow:auto;background:#07030e;border:1px solid var(--line);border-radius:10px;padding:8px;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header>
+  <h1>Bảng điều khiển · Bar Live</h1>
+  <div class="status">
+    <span class="chip" id="srv">Server: …</span>
+    <span class="chip" id="tt">TikTok: chưa kết nối</span>
+    <span class="chip" id="cnt">0 khách</span>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <h2>1 · Kết nối TikTok LIVE</h2>
+    <label for="uid">Username kênh đang live</label>
+    <div class="row"><input id="uid" placeholder="@tenkenhcuaban" autocomplete="off"><button class="primary" id="btnConnect">Kết nối</button><button id="btnDisconnect">Ngắt</button></div>
+    <p class="hint">Chỉ đọc sự kiện công khai của phòng live. Không cần mật khẩu hay cookie TikTok. Phải bật LIVE trước rồi mới kết nối.</p>
+    <button class="pink" id="btnOverlay">Mở màn hình overlay 9:16</button>
+    <p class="hint">Mở overlay rồi bấm "Bật âm thanh" một lần trong cửa sổ đó. Dùng OBS thì trỏ Browser source tới <code>/live/overlay.html?obs=1</code> (1080×1920) và bật "Control audio via OBS".</p>
+    <h2>Khách trong quán</h2>
+    <div id="people"><table><tbody id="peopleBody"><tr><td class="hint">Chưa có ai</td><td></td></tr></tbody></table></div>
+  </section>
+
+  <section class="card wide">
+    <h2>2 · Nhạc YouTube</h2>
+    <div id="now">Chưa phát nhạc</div>
+    <div class="row tight">
+      <button class="pink" id="btnSkip">⏭ Bỏ qua bài đang phát</button>
+      <label class="check"><input type="checkbox" id="screen" checked> Hiện màn hình video</label>
+    </div>
+    <label>Âm lượng nhạc <input type="range" id="volume" min="0" max="100" value="70"></label>
+    <label for="playUrl">Link YouTube</label>
+    <div class="row"><input id="playUrl" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off"><button class="primary" id="btnPlayNow">Phát ngay</button><button id="btnAdd">Thêm vào hàng đợi</button></div>
+    <h2>Hàng đợi yêu cầu</h2>
+    <div id="queue"><p class="hint">Chưa có yêu cầu nào.</p></div>
+    <p class="hint">Yêu cầu <b>chờ link</b> là khách chỉ gõ tên bài: dán link YouTube vào ô của yêu cầu đó rồi bấm "Lưu link". Bài có link sẽ được phát lần lượt; hết yêu cầu thì quay về nhạc nền.</p>
+    <h2>Nhạc nền</h2>
+    <label for="bgText">Mỗi dòng một link YouTube, phát lặp vòng khi không có yêu cầu</label>
+    <textarea id="bgText" placeholder="https://www.youtube.com/watch?v=…&#10;https://youtu.be/…"></textarea>
+    <div class="row tight"><button class="primary" id="btnBg">Lưu nhạc nền</button></div>
+    <h2>Luật yêu cầu bài</h2>
+    <div class="row">
+      <label>Cú pháp<input id="reqPrefix" value="!bai"></label>
+      <label>Quà tối thiểu (kim cương)<input id="reqMinDiamonds" type="number" min="1" value="30"></label>
+      <label>Bình luận và quà cách nhau tối đa (giây)<input id="reqWindowSec" type="number" min="10" max="600" value="120"></label>
+    </div>
+    <p class="hint">Khách bình luận <b id="hPrefix">!bai</b> + tên bài (hoặc link), rồi tặng quà tổng ≥ ngưỡng trong thời gian trên. Tặng quà trước rồi bình luận sau cũng được.</p>
+  </section>
+
+  <section class="card">
+    <h2>3 · Thử tương tác</h2>
+    <label for="simName">Tên khách</label>
+    <input id="simName" value="Minh An">
+    <label for="simText">Bình luận</label>
+    <input id="simText" value="!bai Nơi này có anh">
+    <div class="row"><button id="btnChat">Gửi bình luận</button></div>
+    <div class="row">
+      <button data-gift="Hoa hồng" data-dia="1">Hoa hồng · 1</button>
+      <button data-gift="Ly bia" data-dia="30">Ly bia · 30</button>
+      <button data-gift="Champagne" data-dia="199">Champagne · 199</button>
+    </div>
+    <p class="hint">Thử yêu cầu bài: gửi bình luận <b>!bai Tên bài</b> rồi bấm quà <b>Ly bia · 30</b>.</p>
+    <h2>Đổ khách mẫu</h2>
+    <div class="row"><button data-fill="10">10</button><button data-fill="20">20</button><button data-fill="40">40</button><button data-fill="60">60</button></div>
+    <button class="red" id="btnClear">Dọn trống toàn bộ bàn</button>
+    <h2>Bot tương tác mô phỏng</h2>
+    <div class="row">
+      <label>Số bot<input id="botN" type="number" min="1" max="60" value="12"></label>
+      <label>Nhịp<select id="botPace"><option value="slow">Chậm</option><option value="mid" selected>Vừa</option><option value="fast">Nhanh</option></select></label>
+      <button id="btnBots">Bật bot</button>
+    </div>
+    <p class="hint">Bot chỉ chạy trên màn hình của bạn, không phải người xem TikTok thật. Bot không yêu cầu bài.</p>
+  </section>
+
+  <section class="card">
+    <h2>4 · Giọng đọc · Cảnh</h2>
+    <div class="row">
+      <label>Giọng<select id="voice"><option value="vi-VN-HoaiMyNeural">Hoài My (nữ)</option><option value="vi-VN-NamMinhNeural">Nam Minh (nam)</option></select></label>
+      <label>Cao độ (Hz)<input id="pitch" type="number" step="1" value="0"></label>
+      <label>Tốc độ (%)<input id="rate" type="number" step="1" value="0"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="thankGifts" checked> Đọc lời cảm ơn khi khách tặng quà</label>
+    <label for="sayText">Đọc thông báo lên live</label>
+    <textarea id="sayText">Chào mừng cả nhà đến với Sky Bar. Bình luận để vào bàn, tặng quà để yêu cầu bài hát nhé!</textarea>
+    <div class="row tight"><button class="primary" id="btnSay">Phát lên live</button></div>
+    <label>Tên quán<input id="title" value="SKY BAR"></label>
+    <label>Dòng phụ<input id="subtitle" value="LIVE DJ · QUẨY CÙNG NHAU"></label>
+    <label>Số chỗ<select id="seatMode"><option value="auto">Tự mở rộng 40 → 60</option><option value="40">10 bàn · 40 chỗ</option><option value="60">15 bàn · 60 chỗ</option></select></label>
+    <label class="check"><input type="checkbox" id="joinOnEnter"> Người vào phòng cũng được ngồi (không cần bình luận)</label>
+  </section>
+</div>
+
+<section class="card" style="margin-top:16px">
+  <h2>Nhật ký</h2>
+  <div id="log" aria-live="polite"></div>
+</section>
+<footer class="hint" style="margin-top:14px;text-align:center">Bar Live · dựa trên mã nguồn mở Chánh Điện Online (MIT) của Kent Juno</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+let ws = null;
+const send = (cmd, extra={}) => ws?.readyState===1 && ws.send(JSON.stringify({ t:'ctl', cmd, ...extra }));
+function logLine(s){ const el=$('log'); el.textContent += s + '\n'; el.scrollTop = el.scrollHeight; }
+const SETTING_IDS = ['voice','pitch','rate','thankGifts','title','subtitle','seatMode','joinOnEnter','screen','volume','reqPrefix','reqMinDiamonds','reqWindowSec'];
+function fillSettings(s){ for (const k of SETTING_IDS){ const el=$(k); if (!el || s[k]===undefined || el===document.activeElement) continue; if (el.type==='checkbox') el.checked=!!s[k]; else el.value=s[k]; } $('hPrefix').textContent=s.reqPrefix||'!bai'; }
+function readSettings(){ const o={}; for (const k of SETTING_IDS){ const el=$(k); o[k] = el.type==='checkbox' ? el.checked : (el.type==='number'||el.type==='range') ? +el.value : el.value; } return o; }
+
+/* ---------- khách */
+const people = new Map();
+function renderPeople(){
+  const tb=$('peopleBody'); tb.innerHTML='';
+  const list=[...people.values()].sort((a,b)=>b.coins-a.coins || a.name.localeCompare(b.name));
+  if (!list.length){ tb.innerHTML='<tr><td class="hint">Chưa có ai</td><td></td></tr>'; }
+  list.forEach((p,i)=>{ const tr=document.createElement('tr'); const a=document.createElement('td'); a.textContent=`${String(i+1).padStart(2,'0')}  ${p.name}`; const b=document.createElement('td'); b.textContent=p.coins? p.coins+' 💎':''; tr.append(a,b); tb.append(tr); });
+  $('cnt').textContent = `${people.size} khách`;
+}
+
+/* ---------- nhạc */
+function el(tag, props={}, ...kids){ const e=document.createElement(tag); Object.assign(e, props); e.append(...kids); return e; }
+function renderMusic(m){
+  const now=$('now'); now.textContent='';
+  if (!m.current) now.append('Chưa phát nhạc. Dán link rồi bấm "Phát ngay", hoặc lưu nhạc nền.');
+  else {
+    const kind = { request:'theo yêu cầu của ' + (m.current.by||'khách'), admin:'admin chọn', background:'nhạc nền' }[m.current.kind] || '';
+    now.append('▶ Đang phát: ', el('b', { textContent: m.current.title || m.current.videoId }), ' · ' + kind);
+  }
+  if (document.activeElement !== $('bgText') && !$('bgText').dataset.touched) $('bgText').value = (m.background||[]).map(b=>b.url || 'https://youtu.be/'+b.videoId).join('\n');
+  const q=$('queue');
+  // giữ nguyên link đang gõ dở khi danh sách được vẽ lại
+  const typing = {}; q.querySelectorAll('input[data-id]').forEach(i => { if (i.value) typing[i.dataset.id] = i.value; });
+  const focusId = document.activeElement?.dataset?.id;
+  q.textContent='';
+  if (!m.queue?.length){ q.append(el('p', { className:'hint', textContent:'Chưa có yêu cầu nào.' })); return; }
+  m.queue.forEach((it, i) => {
+    const badge = it.videoId ? el('span', { className:'badge ok', textContent:'sẵn sàng' })
+      : el('span', { className: 'badge ' + (it.note && it.note!=='chờ link' ? 'bad' : 'wait'), textContent: it.note || 'chờ link' });
+    const inp = el('input', { placeholder:'Dán link YouTube cho bài này', value: typing[it.id] || '', autocomplete:'off' }); inp.dataset.id = it.id;
+    const save = el('button', { className:'sm primary', textContent:'Lưu link', onclick: () => { if (inp.value.trim()) send('musicSetLink', { id: it.id, url: inp.value.trim() }); inp.value=''; } });
+    inp.onkeydown = e => { if (e.key==='Enter') save.click(); };
+    const tools = el('div', { className:'row tight' },
+      el('button', { className:'sm', textContent:'▲', title:'Lên', onclick: () => send('musicMove', { id: it.id, dir: -1 }) }),
+      el('button', { className:'sm', textContent:'▼', title:'Xuống', onclick: () => send('musicMove', { id: it.id, dir: 1 }) }),
+      el('button', { className:'sm pink', textContent:'▶ Phát ngay', disabled: !it.videoId, onclick: () => send('musicPlayNow', { id: it.id }) }),
+      el('button', { className:'sm red', textContent:'✕ Xóa', onclick: () => send('musicRemove', { id: it.id }) }));
+    q.append(el('div', { className:'qi' },
+      el('div', { className:'top' }, el('span', { className:'title', textContent: `${i+1}. ${it.title}` }), badge),
+      el('div', { className:'by', textContent: it.by ? `Yêu cầu của ${it.by}` + (it.query && it.query!==it.title ? ` · khách gõ: "${it.query}"` : '') : '' }),
+      el('div', { className:'row' }, inp, save), tools));
+    if (focusId === it.id) inp.focus();
+  });
+}
+
+function setTT(st){
+  const e=$('tt'); e.className='chip ' + (st.status==='connected'?'ok':st.status==='error'?'bad':'');
+  e.textContent = st.status==='connected' ? `TikTok: @${st.uniqueId} ✓` : st.status==='connecting' ? `TikTok: đang kết nối @${st.uniqueId}…` : st.status==='error' ? 'TikTok: lỗi kết nối' : 'TikTok: chưa kết nối';
+}
+function connect(){
+  ws = new WebSocket(`ws://${location.host}/ws?role=control`);
+  ws.onopen = () => { $('srv').textContent='Server: đang chạy'; $('srv').className='chip ok'; };
+  ws.onclose = () => { $('srv').textContent='Server: mất kết nối'; $('srv').className='chip bad'; setTimeout(connect, 2000); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.t==='state'){ fillSettings(m.settings); setTT(m.tiktok); people.clear(); for (const v of m.viewers) people.set(v.id,v); renderPeople(); renderMusic(m.music); }
+    else if (m.t==='settings') fillSettings(m.settings);
+    else if (m.t==='logs'){ $('log').textContent=''; m.lines.forEach(logLine); }
+    else if (m.t==='log') logLine(m.line);
+    else if (m.t==='tiktok') setTT(m);
+    else if (m.t==='join'){ people.set(m.v.id,m.v); renderPeople(); }
+    else if (m.t==='leave'){ people.delete(m.id); renderPeople(); }
+    else if (m.t==='gift'){ const p=people.get(m.id); if(p){ p.coins=m.total; renderPeople(); } }
+    else if (m.t==='music') renderMusic(m);
+    else if (m.t==='bots') $('btnBots').textContent = m.on ? 'Tắt bot' : 'Bật bot';
+  };
+}
+connect();
+
+$('btnConnect').onclick = () => send('connect', { uniqueId: $('uid').value });
+$('uid').onkeydown = e => { if (e.key==='Enter') send('connect', { uniqueId: $('uid').value }); };
+$('btnDisconnect').onclick = () => send('disconnect');
+$('btnOverlay').onclick = () => window.open('/live/overlay.html', 'overlay916', 'width=540,height=960');
+$('btnChat').onclick = () => send('chat', { name: $('simName').value, text: $('simText').value });
+document.querySelectorAll('[data-gift]').forEach(b => b.onclick = () => send('gift', { name: $('simName').value, gift: b.dataset.gift, diamonds: +b.dataset.dia, count: 1 }));
+document.querySelectorAll('[data-fill]').forEach(b => b.onclick = () => send('fill', { n: +b.dataset.fill }));
+$('btnClear').onclick = () => send('clear');
+$('btnBots').onclick = () => send('bots', { on: $('btnBots').textContent.includes('Bật'), n: +$('botN').value, pace: $('botPace').value });
+$('btnSay').onclick = () => send('say', { text: $('sayText').value });
+$('btnSkip').onclick = () => send('musicSkip');
+$('btnPlayNow').onclick = () => { if ($('playUrl').value.trim()) send('musicPlay', { url: $('playUrl').value.trim() }); };
+$('btnAdd').onclick = () => { if ($('playUrl').value.trim()) { send('musicAdd', { url: $('playUrl').value.trim() }); $('playUrl').value=''; } };
+$('bgText').oninput = () => { $('bgText').dataset.touched = '1'; };
+$('btnBg').onclick = () => { delete $('bgText').dataset.touched; send('musicBg', { text: $('bgText').value }); };
+for (const k of SETTING_IDS) $(k).addEventListener('change', () => send('settings', { settings: readSettings() }));
+</script>
+</body>
+</html>
